@@ -79,6 +79,8 @@ impl <const DIM: usize> PSO<DIM> {
                 continue;
             }
 
+            let w = 0.1;
+
             let mut r: [[f64; DIM]; 2] = [[0.0; DIM]; 2];
             let mut rng = rand::rng();
     
@@ -89,13 +91,17 @@ impl <const DIM: usize> PSO<DIM> {
 
             let cognitive = self.c[0] * r[0][i] * (self.local_best.translation[i] - self.translation[i]);
             let social = self.c[1] * r[1][i] * (global_best.translation[i] - self.translation[i]);
-            self.velocity[i] += cognitive + social;
+            self.velocity[i] = self.velocity[i] * w + cognitive + social;
         }
     }
 
     pub fn update_translation(&mut self) {
         for i in 0..DIM {
-            let value = self.translation[i] + self.velocity[i];
+            let phi = self.c[0] + self.c[1];
+
+            let k = 2.0 / (2.0 - phi - (phi.powi(2) - 4.0 * phi).sqrt());
+
+            let value = k * (self.translation[i] + self.velocity[i]);
 
             if value > self.func_domain {
                 self.translation[i] = self.func_domain;

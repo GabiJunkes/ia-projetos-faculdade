@@ -2,19 +2,25 @@ use functions::{FunctionType, ackley};
 use pso::{PSO, Result};
 
 use std::{
-    sync::{Arc, Barrier, Mutex},
-    thread,
+    fs::File, io::Write, sync::{Arc, Barrier, Mutex}, thread
 };
 
 mod functions;
 mod pso;
 
 const DIM: usize = 2;
-const NUM_PARTICLES: usize = 30;
-const ITERATIONS: usize = 50000;
+const NUM_PARTICLES: usize = 300;
+const ITERATIONS: usize = 5000;
+
+// considerar PSOs, PSOw, PSOk
+// menor q 10e-10 = 0
+// resolver para 5 e 10
+// Considerar 10 runs para media e desvio-padrao e boxplot.
+// trazer graficos de convergencia
+// 30 particulas
 
 fn main() {
-    let c = [1.4, 1.4]; // cognitive/social coefficients
+    let c = [2.05, 2.05]; // cognitive/social coefficients
     let domain = FunctionType::Ackley as usize as f64;
 
     // Initialize particles
@@ -28,12 +34,17 @@ fn main() {
 
     let mut handles = vec![];
 
+    let mut count = 0;
     for mut particle in particles {
+        count += 1;
         let global_best = Arc::clone(&global_best);
         let barrier = Arc::clone(&barrier);
 
         let handle = thread::spawn(move || {
-            for _ in 0..ITERATIONS {
+            let index = count;
+            let mut history = Vec::new();
+
+            for i in 0..ITERATIONS {
                 particle.update_local_best();
 
                 // dbg!(particle.translation, particle.velocity, particle.local_best);
@@ -53,11 +64,16 @@ fn main() {
                 particle.update_velocity(global);
                 particle.update_translation();
 
+                if index == 1 {
+                  // dbg!(global.value);
+                  history.push(global.value);
+                }
+
                 barrier.wait(); // wait for all particles to finish updating velocity and translation
             }
 
             // Optionally return the final result of this particle
-            particle.local_best
+            (particle.local_best, history)
         });
 
         handles.push(handle);
@@ -70,11 +86,18 @@ fn main() {
     };
 
     for handle in handles {
-        let local_best = handle.join().unwrap();
-        if local_best.value < best.value {
-            best = local_best;
+        let result = handle.join().unwrap();
+        if result.1.len() > 1 {
+          let mut file = File::create(format!("data/data.csv")).expect("Failed to create file");
+          file.write_all(b"Geracao,BestValue\n").unwrap();
+          for (i, value) in result.1.iter().enumerate() {
+            file.write_all(format!("{},{}\n", i, value).as_bytes()).unwrap();
+          }
+
         }
     }
+    
+
 
     let handle = global_best.lock().unwrap();
 
