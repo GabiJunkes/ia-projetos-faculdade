@@ -8,9 +8,9 @@ use std::{
 mod functions;
 mod pso;
 
-const DIM: usize = 2;
-const NUM_PARTICLES: usize = 300;
-const ITERATIONS: usize = 5000;
+const DIM: usize = 3;
+const NUM_PARTICLES: usize = 30;
+const ITERATIONS: usize = 5000000;
 
 // considerar PSOs, PSOw, PSOk
 // menor q 10e-10 = 0

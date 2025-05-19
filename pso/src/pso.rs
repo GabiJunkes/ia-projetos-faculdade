@@ -8,6 +8,7 @@ pub struct PSO<const DIM: usize> {
     pub velocity: [f64; DIM],
     pub local_best: Result::<DIM>,
     c: [f64; 2],
+    k: f64,
     func_domain: f64,
     func: Arc<dyn Fn(Vec<f64>) -> f64 + 'static + Sync + Send>,
 }
@@ -49,11 +50,16 @@ impl <const DIM: usize> PSO<DIM> {
             value: 0.0
         };
 
+        let phi = c[0] + c[1];
+
+        let k = 2.0 / (2.0 - phi - (phi.powi(2) - 4.0 * phi).sqrt()).abs();
+
         let mut pso = PSO::<DIM> {
             translation,
             velocity,
             local_best,
             c,
+            k,
             func_domain,
             func: Arc::new(func),
         };
@@ -79,7 +85,7 @@ impl <const DIM: usize> PSO<DIM> {
                 continue;
             }
 
-            let w = 0.1;
+            let w = 0.5;
 
             let mut r: [[f64; DIM]; 2] = [[0.0; DIM]; 2];
             let mut rng = rand::rng();
@@ -97,11 +103,7 @@ impl <const DIM: usize> PSO<DIM> {
 
     pub fn update_translation(&mut self) {
         for i in 0..DIM {
-            let phi = self.c[0] + self.c[1];
-
-            let k = 2.0 / (2.0 - phi - (phi.powi(2) - 4.0 * phi).sqrt());
-
-            let value = k * (self.translation[i] + self.velocity[i]);
+            let value = self.k * (self.translation[i] + self.velocity[i]);
 
             if value > self.func_domain {
                 self.translation[i] = self.func_domain;
