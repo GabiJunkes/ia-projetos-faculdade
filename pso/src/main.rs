@@ -8,9 +8,10 @@ use std::{
 mod functions;
 mod pso;
 
-const DIM: usize = 1000;
+const DIM: usize = 10;
 const NUM_PARTICLES: usize = 30;
-const ITERATIONS: usize = 100;
+const ITERATIONS: usize = 500;
+const W: f64 = 0.9;
 
 // considerar PSOs, PSOw, PSOk
 // menor q 10e-10 = 0
@@ -21,12 +22,12 @@ const ITERATIONS: usize = 100;
 
 fn main() {
     let c = [2.05, 2.05]; // cognitive/social coefficients
-    let domain = FunctionType::Griewank as usize as f64;
+    let domain = FunctionType::Ackley as usize as f64;
 
     // Initialize particles
     let mut particles = Vec::with_capacity(NUM_PARTICLES);
     for _ in 0..NUM_PARTICLES {
-        particles.push(PSO::<DIM>::new(c, domain, griewank));
+        particles.push(PSO::<DIM>::new(c, W, domain, ackley));
     }
 
     let global_best = Arc::new(Mutex::new(particles[0].local_best.clone()));

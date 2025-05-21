@@ -9,6 +9,7 @@ pub struct PSO<const DIM: usize> {
     pub local_best: Result::<DIM>,
     c: [f64; 2],
     k: f64,
+    w: f64,
     func_domain: f64,
     func: Arc<dyn Fn(Vec<f64>) -> f64 + 'static + Sync + Send>,
 }
@@ -29,9 +30,9 @@ impl <const DIM: usize> Result<DIM> {
 }
 
 impl <const DIM: usize> PSO<DIM> {
-    pub fn new(c: [f64; 2], func_domain: f64, func: impl Fn(Vec<f64>) -> f64 + 'static + Sync + Send) -> Self {
+    pub fn new(c: [f64; 2], w: f64, func_domain: f64, func: impl Fn(Vec<f64>) -> f64 + 'static + Sync + Send) -> Self {
         let range = -func_domain..func_domain;
-        let range_div = -func_domain/8.0..func_domain/8.0;
+        let range_div = -func_domain / 8.0..func_domain / 8.0;
 
         let between_translation = Uniform::try_from(range.clone()).unwrap();
         let between_velocity = Uniform::try_from(range_div).unwrap();
@@ -60,6 +61,7 @@ impl <const DIM: usize> PSO<DIM> {
             local_best,
             c,
             k,
+            w,
             func_domain,
             func: Arc::new(func),
         };
@@ -70,7 +72,7 @@ impl <const DIM: usize> PSO<DIM> {
     }
 
     pub fn update_local_best(&mut self) {
-        let current = (self.func)(self.translation.to_vec());
+        let current = self.evaluate();
 
         if current < self.local_best.value {
             self.local_best.value = current;
@@ -85,8 +87,6 @@ impl <const DIM: usize> PSO<DIM> {
                 continue;
             }
 
-            let w = 0.1;
-
             let mut r: [[f64; DIM]; 2] = [[0.0; DIM]; 2];
             let mut rng = rand::rng();
     
@@ -97,13 +97,13 @@ impl <const DIM: usize> PSO<DIM> {
 
             let cognitive = self.c[0] * r[0][i] * (self.local_best.translation[i] - self.translation[i]);
             let social = self.c[1] * r[1][i] * (global_best.translation[i] - self.translation[i]);
-            self.velocity[i] = self.velocity[i] * w + cognitive + social;
+            self.velocity[i] = self.k * (self.velocity[i] * self.w + cognitive + social);
         }
     }
 
     pub fn update_translation(&mut self) {
         for i in 0..DIM {
-            let value = self.k * (self.translation[i] + self.velocity[i]);
+            let value =  self.translation[i] + self.velocity[i];
 
             if value > self.func_domain {
                 self.translation[i] = self.func_domain;
