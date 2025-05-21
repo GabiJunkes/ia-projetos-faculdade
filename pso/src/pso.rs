@@ -47,7 +47,7 @@ impl <const DIM: usize> PSO<DIM> {
 
         let local_best = Result {
             translation,
-            value: 0.0
+            value: f64::INFINITY,
         };
 
         let phi = c[0] + c[1];
@@ -67,7 +67,6 @@ impl <const DIM: usize> PSO<DIM> {
         pso.local_best.value = pso.evaluate();
 
         pso
-
     }
 
     pub fn update_local_best(&mut self) {
@@ -75,6 +74,7 @@ impl <const DIM: usize> PSO<DIM> {
 
         if current < self.local_best.value {
             self.local_best.value = current;
+            self.local_best.translation = self.translation;
         }
     }
 
@@ -85,7 +85,7 @@ impl <const DIM: usize> PSO<DIM> {
                 continue;
             }
 
-            let w = 0.5;
+            let w = 0.1;
 
             let mut r: [[f64; DIM]; 2] = [[0.0; DIM]; 2];
             let mut rng = rand::rng();
